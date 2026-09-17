@@ -1,1 +1,92 @@
+### this is a Design bench code ####
 
+module pcie_endpoint (
+    input  logic        clk,
+    input  logic        rst,
+    input  logic        tx_valid,
+    input  logic [31:0] tx_data,
+    output logic        rx_valid,
+    output logic [31:0] rx_data
+);
+
+always_ff @(posedge clk or posedge rst) begin
+    if (rst) begin
+        rx_valid <= 1'b0;
+        rx_data  <= 32'b0;
+    end
+    else begin
+        if (tx_valid) begin
+            rx_valid <= 1'b1;
+            rx_data  <= tx_data;
+        end
+        else begin
+            rx_valid <= 1'b0;
+        end
+    end
+end
+
+endmodule
+
+
+
+#######    this is a test bench code   ##########
+
+module tb_pcie_endpoint;
+
+logic clk;
+logic rst;
+logic tx_valid;
+logic [31:0] tx_data;
+logic rx_valid;
+logic [31:0] rx_data;
+
+
+pcie_endpoint dut (
+    .clk(clk),
+    .rst(rst),
+    .tx_valid(tx_valid),
+    .tx_data(tx_data),
+    .rx_valid(rx_valid),
+    .rx_data(rx_data)
+);
+
+always #5 clk = ~clk;
+
+initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars(0, tb_pcie_endpoint);
+end
+
+initial begin
+    $display("---------------------------------------------------------------");
+    $display("TIME\tRST\tTX_VALID\tTX_DATA\t\tRX_VALID\tRX_DATA");
+    $display("---------------------------------------------------------------");
+
+    $monitor("%0t\t%b\t%b\t\t%h\t%b\t\t%h",
+              $time, rst, tx_valid, tx_data, rx_valid, rx_data);
+end
+
+initial begin
+    clk = 0;
+    rst = 1;
+    tx_valid = 0;
+    tx_data = 32'b0;
+
+    #10 rst = 0;
+
+   
+    #10 tx_valid = 1;
+        tx_data = 32'hA5A5A5A5;
+
+    #10 tx_valid = 0;
+
+
+    #20 tx_valid = 1;
+        tx_data = 32'h12345678;
+
+    #10 tx_valid = 0;
+
+    #50 $finish;
+end
+
+endmodule
